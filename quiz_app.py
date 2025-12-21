@@ -1,277 +1,226 @@
 import streamlit as st
-import pandas as pd
-import random
-from supabase import create_client, Client
-from datetime import datetime
+import streamlit.components.v1 as components
+import base64
+import os
 
-# -------------------------
-# PAGE CONFIG
-# -------------------------
+# 1. Page Configuration (Hii ni kwa ajili ya Browser Tab)
 st.set_page_config(
-    page_title="Programming Quiz System",
-    page_icon="🧠",
-    layout="wide"
+    page_title="Master Admin", 
+    page_icon="meshack.png", 
+    layout="wide", 
+    initial_sidebar_state="collapsed"
 )
 
-# -------------------------
-# CUSTOM CSS & HTML (Kwa ajili ya Muonekano na Contrast)
-# -------------------------
-def apply_custom_style():
-    st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+# 2. Kazi ya kusoma picha na kuibadili kuwa Base64
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
 
-        /* Background safi na Font ya Kisasa */
-        .stApp {
-            background-color: #ffffff;
-            font-family: 'Poppins', sans-serif;
-        }
+img_raw = get_base64_image("meshack.png")
+img_data = f"data:image/png;base64,{img_raw}" if img_raw else ""
 
-        /* Maandishi yawe meusi ili yaonekane vizuri (Contrast) */
-        h1, h2, h3, p, span, label, .stMarkdown {
-            color: #1e293b !important;
-        }
+# 3. LALIZIMISHA ICON NA MANIFEST (Hii inatatua tatizo la icon ya Streamlit)
+manifest_json = f"""
+{{
+    "name": "Master Admin System",
+    "short_name": "MasterAdmin",
+    "icons": [
+        {{ "src": "{img_data}", "sizes": "192x192", "type": "image/png" }},
+        {{ "src": "{img_data}", "sizes": "512x512", "type": "image/png" }}
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#15803d",
+    "background_color": "#061a06"
+}}
+"""
+manifest_b64 = base64.b64encode(manifest_json.encode()).decode()
 
-        /* Sidebar Styling (Dark Theme) */
-        section[data-testid="stSidebar"] {
-            background-color: #0f172a !important;
-        }
-        section[data-testid="stSidebar"] * {
-            color: #ffffff !important;
-        }
-
-        /* Question & Result Cards */
-        .q-card, .result-box {
-            background: #f8fafc;
-            padding: 30px;
-            border-radius: 15px;
-            border-left: 8px solid #3b82f6;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
+st.markdown(f"""
+    <script>
+        // 1. Badilisha Favicon kinguvu
+        var link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/png';
+        link.rel = 'shortcut icon';
+        link.href = '{img_data}';
+        document.getElementsByTagName('head')[0].appendChild(link);
         
-        /* Result Score highlight */
-        .score-highlight {
-            font-size: 48px;
-            font-weight: 700;
-            color: #3b82f6;
-            margin: 10px 0;
-        }
+        // 2. Badilisha Apple Icon kwa iOS
+        var appleLink = document.createElement('link');
+        appleLink.rel = 'apple-touch-icon';
+        appleLink.href = '{img_data}';
+        document.getElementsByTagName('head')[0].appendChild(appleLink);
 
-        /* Button Styling */
-        .stButton>button {
-            width: 100%;
-            border-radius: 10px;
-            height: 3.5em;
-            background-color: #3b82f6 !important;
-            color: white !important;
-            font-weight: 600;
-            border: none;
-            transition: 0.3s;
-        }
-        .stButton>button:hover {
-            background-color: #2563eb !important;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
+        // 3. Inject Manifest kwa ajili ya PWA (Install)
+        var manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = 'data:application/manifest+json;base64,{manifest_b64}';
+        document.getElementsByTagName('head')[0].appendChild(manifestLink);
+    </script>
+    <style>
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        header {{visibility: hidden;}}
+        .block-container {{padding: 0px !important;}}
+        iframe {{border: none !important;}}
+    </style>
+""", unsafe_allow_html=True)
 
-        /* Login Box */
-        .login-box {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+# 4. FULL SYSTEM CODE (HTML/JS/CSS)
+full_custom_code = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {{ font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f4f0; color: #1a2e1a; margin: 0; padding: 0; overflow-x: hidden; }}
+        [x-cloak] {{ display: none !important; }}
+        .glass {{ background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }}
+        .gradient-green {{ background: linear-gradient(135deg, #15803d 0%, #166534 100%); }}
+        .stat-card {{ border-left: 4px solid #eab308; }}
+        .spinner-container {{ position: relative; width: 106px; height: 106px; display: flex; align-items: center; justify-content: center; }}
+        .loader-ring {{
+            position: absolute; width: 100%; height: 100%; border: 3px solid transparent;
+            border-top-color: #eab308; border-right-color: #eab308; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }}
+        @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
+    </style>
+</head>
+<body x-data="adminApp()" x-init="init()" x-cloak>
 
-apply_custom_style()
-
-# -------------------------
-# Supabase Config (As it was)
-# -------------------------
-SUPABASE_URL = "https://pnpjfaalcvetdjbcuadj.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBucGpmYWFsY3ZldGRqYmN1YWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjM5NTYsImV4cCI6MjA3ODc5OTk1Nn0.5AmOhm_ATsZTX1Vkg5_XHKEytVVpBsGCfATM4dqWlOo"
-
-@st.cache_resource
-def init_supabase():
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-supabase = init_supabase()
-
-# -------------------------
-# Session Defaults
-# -------------------------
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-    st.session_state.quiz_started = False
-    st.session_state.quiz_finished = False
-    st.session_state.current_q = 0
-    st.session_state.score = 0
-    st.session_state.answers = {}
-    st.session_state.quiz_questions = []
-
-# -------------------------
-# AUTHENTICATION
-# -------------------------
-st.markdown('<h1 style="text-align:center;">🧠 Programming Quiz System</h1>', unsafe_allow_html=True)
-
-users_data = supabase.table("quiz_users").select("id, username, password").execute().data
-usernames = [u["username"] for u in users_data]
-
-if not st.session_state.authenticated:
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.subheader("🔐 Ingia Kwenye Mfumo")
-        username = st.selectbox("Username", usernames)
-        password = st.text_input("Password", type="password")
-        
-        if st.button("Login"):
-            user = next((u for u in users_data if u["username"] == username), None)
-            if user and user["password"] == password:
-                st.session_state.authenticated = True
-                st.session_state.user_id = user["id"]
-                st.session_state.username = username
-                st.success("Login successful")
-                st.rerun()
-            else:
-                st.error("Invalid credentials")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# -------------------------
-# MAIN SYSTEM
-# -------------------------
-if st.session_state.authenticated:
-
-    # -------- SIDEBAR --------
-    st.sidebar.markdown(f"### 👤 {st.session_state.username}")
-    st.sidebar.markdown("---")
-
-    history = (
-        supabase.table("test_results")
-        .select("score, date_taken")
-        .eq("user_id", st.session_state.user_id)
-        .order("date_taken", desc=True)
-        .limit(5).execute().data
-    )
-
-    st.sidebar.subheader("📜 Historia ya Majaribio")
-    if history:
-        for h in history:
-            date_str = pd.to_datetime(h['date_taken']).strftime('%d %b %Y')
-            st.sidebar.info(f"🗓 {date_str} → **{h['score']} / 20**")
-    else:
-        st.sidebar.write("Huna majaribio bado.")
-
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🏆 Top 3 Scores")
-    top_scores = supabase.table("test_results").select("user_id, score").order("score", desc=True).limit(3).execute().data
-    for i, t in enumerate(top_scores):
-        user = next((u for u in users_data if u["id"] == t["user_id"]), {"username": "User"})
-        st.sidebar.write(f"{i+1}. {user['username']} → **{t['score']}**")
-
-    # -------- START QUIZ SCREEN --------
-    if not st.session_state.quiz_started and not st.session_state.quiz_finished:
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.subheader("📘 Maelekezo ya Jaribio")
-            st.info("""
-            • Jaribio lina maswali **20** ya kuchagua.
-            • Kila swali lina jibu moja sahihi.
-            • Alama zako zitahifadhiwa ukimaliza.
-            """)
-            if st.button("🚀 Anza Jaribio Sasa"):
-                all_questions = supabase.table("quiz_questions").select("*").execute().data
-                st.session_state.quiz_questions = random.sample(all_questions, 20)
-                st.session_state.quiz_started = True
-                st.session_state.quiz_finished = False
-                st.session_state.current_q = 0
-                st.session_state.score = 0
-                st.session_state.answers = {}
-                st.rerun()
-        with col2:
-            st.image("https://cdn-icons-png.flaticon.com/512/5692/5692030.png", width=200)
-
-    # -------- QUIZ FLOW --------
-    if st.session_state.quiz_started:
-        q_idx = st.session_state.current_q
-        
-        if q_idx < 20:
-            question = st.session_state.quiz_questions[q_idx]
-            st.progress((q_idx) / 20)
-            st.write(f"Swali la **{q_idx + 1}** kati ya 20")
-
-            st.markdown('<div class="q-card">', unsafe_allow_html=True)
-            st.subheader(question['question'])
-            
-            options = {
-                "A": f"A. {question['option_a']}",
-                "B": f"B. {question['option_b']}",
-                "C": f"C. {question['option_c']}",
-                "D": f"D. {question['option_d']}",
-            }
-
-            selected = st.radio("Chagua jibu sahihi:", list(options.values()), key=f"q_{q_idx}")
-
-            if st.button("Next ➡️"):
-                user_key = next(k for k, v in options.items() if selected == v)
-                st.session_state.answers[q_idx] = user_key
+    <template x-if="!session">
+        <div class="flex items-start justify-center min-h-screen bg-[#061a06] px-4 pt-12 md:pt-20 relative overflow-hidden">
+            <div class="absolute w-96 h-96 bg-green-600/20 rounded-full blur-[80px] -top-20 -left-20"></div>
+            <div class="max-w-md w-full glass p-8 md:p-10 rounded-[2.5rem] shadow-2xl text-center z-10 border border-green-900/10">
+                <div class="flex justify-center mb-6">
+                    <div class="spinner-container">
+                        <div x-show="isLoading" class="loader-ring"></div>
+                        <img src="{img_data}" class="w-24 h-24 rounded-full object-cover border-2 border-yellow-400 shadow-xl transition-transform" :class="isLoading ? 'scale-90' : ''">
+                    </div>
+                </div>
+                <h2 class="text-2xl font-extrabold text-green-900 mb-1 uppercase">Master Admin</h2>
+                <p class="text-[10px] font-black text-green-700 uppercase tracking-widest mb-8">Management System</p>
                 
-                if user_key == question["correct_option"]:
-                    st.session_state.score += 1
+                <div class="space-y-4 text-left">
+                    <input type="text" x-model="loginData.user" placeholder="Username" class="w-full p-4 bg-green-50 border border-green-100 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-semibold">
+                    <input type="password" x-model="loginData.pass" placeholder="Password" class="w-full p-4 bg-green-50 border border-green-100 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-semibold">
+                    <button @click="login" :disabled="isLoading" class="w-full gradient-green text-yellow-400 py-4 rounded-2xl font-bold shadow-lg uppercase tracking-widest disabled:opacity-50">
+                        <span x-text="isLoading ? 'VERIFYING...' : 'LOGIN TO SYSTEM'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 
-                st.session_state.current_q += 1
-                if st.session_state.current_q >= 20:
-                    st.session_state.quiz_started = False
-                    st.session_state.quiz_finished = True
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    <template x-if="session">
+        <div class="min-h-screen flex flex-col">
+            <nav class="glass border-b border-green-100 h-20 px-4 md:px-12 flex justify-between items-center sticky top-0 z-50">
+                <div class="flex items-center space-x-3">
+                    <img src="{img_data}" class="w-10 h-10 rounded-full border-2 border-yellow-400">
+                    <span class="font-black text-green-900 uppercase">Master Admin</span>
+                </div>
+                <button @click="logout" class="bg-red-50 px-4 py-2 rounded-xl text-red-700 font-bold text-[10px] uppercase">Logout</button>
+            </nav>
 
-    # -------- RESULTS DISPLAY (Kipengele Kilichorekebishwa) --------
-    if st.session_state.quiz_finished:
-        st.balloons()
-        
-        # 1. Hifadhi matokeo mara moja tu
-        if "data_saved" not in st.session_state:
-            supabase.table("test_results").insert({
-                "user_id": st.session_state.user_id,
-                "score": st.session_state.score,
-                "date_taken": datetime.now().isoformat()
-            }).execute()
-            st.session_state.data_saved = True
+            <main class="max-w-7xl mx-auto w-full px-4 py-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm stat-card">
+                        <p class="text-[10px] font-black text-green-600/50 uppercase mb-2">Total Vyuo</p>
+                        <h3 class="text-3xl font-black text-green-900" x-text="allVyuo.length">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm stat-card">
+                        <p class="text-[10px] font-black text-green-600/50 uppercase mb-2">UVCCM</p>
+                        <h3 class="text-3xl font-black text-green-700" x-text="allVyuo.filter(v => v.ina_uvccm).length">0</h3>
+                    </div>
+                </div>
 
-        # 2. Onyesha Score kwa uzuri
-        st.markdown('<div class="result-box" style="text-align:center;">', unsafe_allow_html=True)
-        st.markdown(f"## 🎉 Hongera sana, {st.session_state.username}!")
-        st.markdown("### Jaribio lako limekamilika")
-        st.markdown(f'<div class="score-highlight">{st.session_state.score} / 20</div>', unsafe_allow_html=True)
-        
-        percent = (st.session_state.score / 20) * 100
-        st.write(f"Ufaulu wako ni **{percent}%**")
-        st.markdown('</div>', unsafe_allow_html=True)
+                <div class="bg-green-900 p-6 rounded-[2.5rem] shadow-xl mb-8">
+                    <label class="text-[10px] font-black text-yellow-400 uppercase mb-2 block">Chujio la Mkoa</label>
+                    <select x-model="selectedRegion" @change="applyFilter" class="w-full bg-green-800 text-white p-4 rounded-2xl border-none outline-none font-bold">
+                        <option value="ALL">Mikoa Yote</option>
+                        <template x-for="m in uniqueMikoa" :key="m"><option :value="m" x-text="m"></option></template>
+                    </select>
+                </div>
 
-        # 3. Uchambuzi wa Majibu
-        with st.expander("🔍 Angalia Uchambuzi wa Majibu"):
-            results_data = []
-            for i, q in enumerate(st.session_state.quiz_questions):
-                user_key = st.session_state.answers.get(i)
-                correct_key = q['correct_option']
-                status = "✅ Sahihi" if user_key == correct_key else "❌ Kosa"
-                
-                results_data.append({
-                    "Swali #": i+1,
-                    "Hali": status,
-                    "Swali": q['question'],
-                    "Jibu Lako": user_key,
-                    "Jibu Sahihi": correct_key
-                })
-            st.table(results_data)
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden">
+                    <div class="p-6 border-b flex justify-between items-center">
+                        <div class="flex space-x-2">
+                             <button @click="tab = 'vyuo'" :class="tab === 'vyuo' ? 'bg-green-700 text-yellow-400' : 'text-green-800'" class="px-4 py-2 rounded-lg text-xs font-black uppercase">Vyuo</button>
+                             <button @click="tab = 'baraza'" :class="tab === 'baraza' ? 'bg-green-700 text-yellow-400' : 'text-green-800'" class="px-4 py-2 rounded-lg text-xs font-black uppercase">Baraza</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-green-50 text-[10px] font-black uppercase">
+                                <tr><th class="p-6">Mkoa</th><th class="p-6">Jina la Chuo</th><th class="p-6">Hali</th></tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="v in filteredVyuo" :key="v.id">
+                                    <tr class="border-b">
+                                        <td class="p-6 font-bold text-green-700" x-text="v.mkoa"></td>
+                                        <td class="p-6 font-black text-green-900" x-text="v.jina_la_chuo"></td>
+                                        <td class="p-6"><span x-text="v.ina_uvccm ? 'IPO' : 'HAIPO'" :class="v.ina_uvccm ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-700'" class="px-3 py-1 rounded-full text-[9px] font-black"></span></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </template>
 
-        # 4. Kitufe cha kuanza upya
-        if st.button("🔄 Anza Jaribio Jipya"):
-            # Kusafisha session ili kuanza upya
-            for key in ['quiz_started', 'quiz_finished', 'current_q', 'score', 'answers', 'data_saved']:
-                if key in st.session_state:
-                    del st.session_state[key]
-            st.rerun()
+    <script>
+        const {{ createClient }} = supabase;
+        const client = createClient('https://xickklzlmwaobzobwyws.supabase.co', 'sb_publishable_94BpD9gpOpYyWryIhzBjog_kxQRAG4W');
+
+        function adminApp() {{
+            return {{
+                session: JSON.parse(localStorage.getItem('admin_session')) || null,
+                isLoading: false, tab: 'vyuo',
+                loginData: {{ user: '', pass: '' }},
+                selectedRegion: 'ALL',
+                uniqueMikoa: [], allVyuo: [], filteredVyuo: [],
+
+                async init() {{ if(this.session) await this.loadAll(); }},
+
+                async login() {{
+                    this.isLoading = true;
+                    try {{
+                        const {{ data }} = await client.from('watumiaji').select('*').eq('username', this.loginData.user).eq('password', this.loginData.pass).single();
+                        if(data) {{ 
+                            this.session = data; 
+                            localStorage.setItem('admin_session', JSON.stringify(data)); 
+                            await this.loadAll(); 
+                        }} else {{ alert("Login Failed!"); }}
+                    }} finally {{ this.isLoading = false; }}
+                }},
+
+                logout() {{ localStorage.clear(); location.reload(); }},
+
+                async loadAll() {{
+                    const {{ data }} = await client.from('vyuo').select('*').order('mkoa');
+                    this.allVyuo = data || [];
+                    this.uniqueMikoa = [...new Set(this.allVyuo.map(v => v.mkoa))];
+                    this.applyFilter();
+                }},
+
+                applyFilter() {{
+                    this.filteredVyuo = this.selectedRegion === 'ALL' ? this.allVyuo : this.allVyuo.filter(v => v.mkoa === this.selectedRegion);
+                }}
+            }}
+        }}
+    </script>
+</body>
+</html>
+"""
+
+components.html(full_custom_code, height=1200, scrolling=True)
